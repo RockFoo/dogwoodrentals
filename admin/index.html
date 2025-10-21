@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dogwood Rentals - Admin</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: #2c5530;
+            margin-bottom: 2rem;
+        }
+
+        .login-form, .admin-panel {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .login-form {
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #4a7c4e;
+        }
+
+        button {
+            background: #4a7c4e;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 5px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #2c5530;
+        }
+
+        button.secondary {
+            background: #666;
+        }
+
+        button.secondary:hover {
+            background: #444;
+        }
+
+        button.danger {
+            background: #c53030;
+        }
+
+        button.danger:hover {
+            background: #9b2c2c;
+        }
+
+        .equipment-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 2rem;
+        }
+
+        .equipment-table th,
+        .equipment-table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .equipment-table th {
+            background: #2c5530;
+            color: white;
+            font-weight: 600;
+        }
+
+        .equipment-table tr:hover {
+            background: #f9f9f9;
+        }
+
+        .actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .actions button {
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-header h2 {
+            color: #2c5530;
+        }
+
+        .close-btn {
+            background: none;
+            color: #666;
+            font-size: 1.5rem;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+        }
+
+        .message {
+            padding: 1rem;
+            border-radius: 5px;
+            margin-bottom: 1rem;
+        }
+
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .toolbar {
+            margin-bottom: 2rem;
+            display: flex;
+            gap: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Login Form -->
+        <div id="loginSection" class="login-form">
+            <h1>Admin Login</h1>
+            <div id="loginMessage"></div>
+            <div class="form-group">
+                <label for="password">Password:</label>
+                <input type="password" id="password" placeholder="Enter admin password">
+            </div>
+            <button onclick="login()">Login</button>
+        </div>
+
+        <!-- Admin Panel -->
+        <div id="adminSection" class="hidden">
+            <h1>Equipment Management</h1>
+            <div id="message"></div>
+            
+            <div class="toolbar">
+                <button onclick="showAddModal()">+ Add New Equipment</button>
+                <button class="secondary" onclick="logout()">Logout</button>
+            </div>
+
+            <div class="admin-panel">
+                <table class="equipment-table" id="equipmentTable">
+                    <thead>
+                        <tr>
+                            <th>SKU</th>
+                            <th>Name</th>
+                            <th>Category</th>
+                            <th>Daily Rate</th>
+                            <th>Weekly Rate</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="equipmentBody">
+                        <tr><td colspan="6" style="text-align:center;">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Edit/Add Modal -->
+        <div id="editModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="modalTitle">Edit Equipment</h2>
+                    <button class="close-btn" onclick="closeModal()">&times;</button>
+                </div>
+                <form id="equipmentForm" onsubmit="saveEquipment(event)">
+                    <div class="form-group">
+                        <label for="editSku">SKU *</label>
+                        <input type="text" id="editSku" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editName">Name *</label>
+                        <input type="text" id="editName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editCategory">Category *</label>
+                        <select id="editCategory" required>
+                            <option value="">Select Category</option>
+                            <option value="Environmental Testing Equipment">Environmental Testing Equipment</option>
+                            <option value="Water Quality & Monitoring">Water Quality & Monitoring</option>
+                            <option value="Groundwater Sampling Equipment">Groundwater Sampling Equipment</option>
+                            <option value="Field Equipment & Vehicles">Field Equipment & Vehicles</option>
+                            <option value="Trailers & Transport">Trailers & Transport</option>
+                            <option value="Specialty Items">Specialty Items</option>
+                            <option value="Disposable Supplies">Disposable Supplies</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="editDailyRate">Daily Rate</label>
+                        <input type="number" id="editDailyRate" step="0.01" placeholder="Leave blank if N/A">
+                    </div>
+                    <div class="form-group">
+                        <label for="editWeeklyRate">Weekly Rate</label>
+                        <input type="number" id="editWeeklyRate" step="0.01" placeholder="Leave blank if N/A">
+                    </div>
+                    <div class="form-group">
+                        <label for="editSpecSheet">Spec Sheet URL</label>
+                        <input type="url" id="editSpecSheet" placeholder="https://...">
+                    </div>
+                    <div style="display: flex; gap: 1rem;">
+                        <button type="submit">Save</button>
+                        <button type="button" class="secondary" onclick="closeModal()">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentPassword = '';
+        let equipmentData = [];
+        let editingIndex = -1;
+
+        // Login
+        async function login() {
+            const password = document.getElementById('password').value;
+            if (!password) {
+                showMessage('loginMessage', 'Please enter password', 'error');
+                return;
+            }
+
+            currentPassword = password;
+            
+            // Try to load equipment to verify password
+            try {
+                await loadEquipment();
+                document.getElementById('loginSection').classList.add('hidden');
+                document.getElementById('adminSection').classList.remove('hidden');
+            } catch (error) {
+                showMessage('loginMessage', 'Invalid password', 'error');
+                currentPassword = '';
+            }
+        }
+
+        // Logout
+        function logout() {
+            currentPassword = '';
+            document.getElementById('adminSection').classList.add('hidden');
+            document.getElementById('loginSection').classList.remove('hidden');
+            document.getElementById('password').value = '';
+        }
+
+        // Load equipment
+        async function loadEquipment() {
+            try {
+                const response = await fetch('/.netlify/functions/get-equipment');
+                const data = await response.json();
+                equipmentData = data.equipment || [];
+                renderEquipmentTable();
+            } catch (error) {
+                console.error('Error loading equipment:', error);
+                showMessage('message', 'Error loading equipment data', 'error');
+            }
+        }
+
+        // Render equipment table
+        function renderEquipmentTable() {
+            const tbody = document.getElementById('equipmentBody');
+            
+            if (equipmentData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No equipment found. Click "Add New Equipment" to get started.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = equipmentData.map((item, index) => `
+                <tr>
+                    <td>${item.sku}</td>
+                    <td>${item.name}</td>
+                    <td>${item.category}</td>
+                    <td>$${item.dailyRate || 'N/A'}</td>
+                    <td>$${item.weeklyRate || 'N/A'}</td>
+                    <td class="actions">
+                        <button onclick="editEquipment(${index})">Edit</button>
+                        <button class="danger" onclick="deleteEquipment(${index})">Delete</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Show add modal
+        function showAddModal() {
+            editingIndex = -1;
+            document.getElementById('modalTitle').textContent = 'Add New Equipment';
+            document.getElementById('equipmentForm').reset();
+            document.getElementById('editModal').classList.add('active');
+        }
+
+        // Edit equipment
+        function editEquipment(index) {
+            editingIndex = index;
+            const item = equipmentData[index];
+            
+            document.getElementById('modalTitle').textContent = 'Edit Equipment';
+            document.getElementById('editSku').value = item.sku;
+            document.getElementById('editName').value = item.name;
+            document.getElementById('editCategory').value = item.category;
+            document.getElementById('editDailyRate').value = item.dailyRate || '';
+            document.getElementById('editWeeklyRate').value = item.weeklyRate || '';
+            document.getElementById('editSpecSheet').value = item.specSheet || '';
+            
+            document.getElementById('editModal').classList.add('active');
+        }
+
+        // Close modal
+        function closeModal() {
+            document.getElementById('editModal').classList.remove('active');
+            document.getElementById('equipmentForm').reset();
+            editingIndex = -1;
+        }
+
+        // Save equipment
+        async function saveEquipment(event) {
+            event.preventDefault();
+            
+            const item = {
+                sku: document.getElementById('editSku').value,
+                name: document.getElementById('editName').value,
+                category: document.getElementById('editCategory').value,
+                dailyRate: parseFloat(document.getElementById('editDailyRate').value) || null,
+                weeklyRate: parseFloat(document.getElementById('editWeeklyRate').value) || null,
+                specSheet: document.getElementById('editSpecSheet').value || ''
+            };
+
+            if (editingIndex === -1) {
+                // Add new
+                equipmentData.push(item);
+            } else {
+                // Update existing
+                equipmentData[editingIndex] = item;
+            }
+
+            await saveToDatabase();
+            closeModal();
+            renderEquipmentTable();
+            showMessage('message', 'Equipment saved successfully!', 'success');
+        }
+
+        // Delete equipment
+        async function deleteEquipment(index) {
+            if (!confirm('Are you sure you want to delete this equipment?')) {
+                return;
+            }
+
+            equipmentData.splice(index, 1);
+            await saveToDatabase();
+            renderEquipmentTable();
+            showMessage('message', 'Equipment deleted successfully!', 'success');
+        }
+
+        // Save to database
+        async function saveToDatabase() {
+            try {
+                const response = await fetch('/.netlify/functions/save-equipment', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        password: currentPassword,
+                        equipment: equipmentData
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(result.error || 'Failed to save');
+                }
+            } catch (error) {
+                console.error('Error saving:', error);
+                showMessage('message', 'Error saving data: ' + error.message, 'error');
+                throw error;
+            }
+        }
+
+        // Show message
+        function showMessage(elementId, text, type) {
+            const messageDiv = document.getElementById(elementId);
+            messageDiv.innerHTML = `<div class="message ${type}">${text}</div>`;
+            setTimeout(() => {
+                messageDiv.innerHTML = '';
+            }, 5000);
+        }
+
+        // Handle Enter key on login
+        document.getElementById('password')?.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                login();
+            }
+        });
+    </script>
+</body>
+</html>
