@@ -3,6 +3,10 @@ const { getStore } = require("@netlify/blobs");
 exports.handler = async (event, context) => {
   const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "changeme123";
   
+  // Debug logging
+  console.log("Function called");
+  console.log("Password from env exists:", !!process.env.ADMIN_PASSWORD);
+  
   if (event.httpMethod !== "POST") {
     return {
       statusCode: 405,
@@ -14,13 +18,20 @@ exports.handler = async (event, context) => {
     const body = JSON.parse(event.body);
     const { password } = body;
     
+    console.log("Password received:", !!password);
+    console.log("Passwords match:", password === ADMIN_PASSWORD);
+    
     // Check password
     if (password !== ADMIN_PASSWORD) {
       return {
         statusCode: 401,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          error: "Invalid password"
+          error: "Invalid password",
+          debug: {
+            receivedPassword: password ? "yes" : "no",
+            envPasswordExists: !!process.env.ADMIN_PASSWORD
+          }
         })
       };
     }
