@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Import Equipment Data</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            padding: 2rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .import-box {
+            background: white;
+            padding: 3rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+        }
+
+        h1 {
+            color: #2c5530;
+            margin-bottom: 1rem;
+        }
+
+        p {
+            color: #666;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            color: #856404;
+            padding: 1rem;
+            border-radius: 5px;
+            margin-bottom: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #4a7c4e;
+        }
+
+        button {
+            background: #4a7c4e;
+            color: white;
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 5px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.3s;
+            width: 100%;
+        }
+
+        button:hover {
+            background: #2c5530;
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .message {
+            padding: 1rem;
+            border-radius: 5px;
+            margin-top: 1.5rem;
+        }
+
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="import-box">
+        <h1>Import Equipment Data</h1>
+        <p>This is a one-time setup to load all your equipment into the database.</p>
+        
+        <div class="warning">
+            <strong>⚠️ Warning:</strong> This will replace any existing equipment data. Only run this once during initial setup!
+        </div>
+
+        <div class="form-group">
+            <label for="password">Admin Password:</label>
+            <input type="password" id="password" placeholder="Enter admin password">
+        </div>
+
+        <button id="importBtn" onclick="importData()">Import Equipment Data</button>
+
+        <div id="message" class="hidden"></div>
+    </div>
+
+    <script>
+        async function importData() {
+            const password = document.getElementById('password').value;
+            const btn = document.getElementById('importBtn');
+            const messageDiv = document.getElementById('message');
+
+            if (!password) {
+                showMessage('Please enter admin password', 'error');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Importing...';
+            messageDiv.classList.add('hidden');
+
+            try {
+                const response = await fetch('/.netlify/functions/import-csv', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ password })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showMessage(`✅ Success! Imported ${result.count} items. You can now close this page and go to admin.html to manage your equipment.`, 'success');
+                    btn.textContent = 'Import Complete!';
+                } else {
+                    throw new Error(result.error || 'Import failed');
+                }
+            } catch (error) {
+                console.error('Import error:', error);
+                showMessage(`❌ Error: ${error.message}`, 'error');
+                btn.disabled = false;
+                btn.textContent = 'Import Equipment Data';
+            }
+        }
+
+        function showMessage(text, type) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.className = `message ${type}`;
+            messageDiv.textContent = text;
+            messageDiv.classList.remove('hidden');
+        }
+
+        // Handle Enter key
+        document.getElementById('password').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                importData();
+            }
+        });
+    </script>
+</body>
+</html>
