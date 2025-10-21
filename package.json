@@ -1,0 +1,8 @@
+{
+  "name": "dogwood-rentals",
+  "version": "1.0.0",
+  "description": "Dogwood Rentals Equipment Website",
+  "dependencies": {
+    "@netlify/blobs": "^7.0.0"
+  }
+}
