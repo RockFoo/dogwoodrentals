@@ -1,28 +1,31 @@
-import { getStore } from "@netlify/blobs";
+const { getStore } = require("@netlify/blobs");
 
-export default async (req, context) => {
-  // One-time import script - password protected
+exports.handler = async (event, context) => {
   const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "changeme123";
   
-  if (req.method !== "POST") {
-    return new Response("Method not allowed", { status: 405 });
+  if (event.httpMethod !== "POST") {
+    return {
+      statusCode: 405,
+      body: "Method not allowed"
+    };
   }
   
   try {
-    const body = await req.json();
+    const body = JSON.parse(event.body);
     const { password } = body;
     
     // Check password
     if (password !== ADMIN_PASSWORD) {
-      return new Response(JSON.stringify({
-        error: "Invalid password"
-      }), {
-        status: 401,
-        headers: { "Content-Type": "application/json" }
-      });
+      return {
+        statusCode: 401,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          error: "Invalid password"
+        })
+      };
     }
     
-    // Initial equipment data from your CSV
+    // Initial equipment data
     const initialEquipment = [
       {sku: "DR1", name: "Heron 100' Interface Probe", category: "Environmental Testing Equipment", dailyRate: 50, weeklyRate: 150, specSheet: "https://heroninstruments.com/wp-content/uploads/2024/04/A-825-1602-001-Rev-1-H.OIL_Brochure-2024.pdf"},
       {sku: "DR2", name: "TSI VelociCalc Meter", category: "Environmental Testing Equipment", dailyRate: 40, weeklyRate: 125, specSheet: ""},
@@ -84,23 +87,25 @@ export default async (req, context) => {
     const store = getStore("equipment");
     await store.setJSON("all-equipment", initialEquipment);
     
-    return new Response(JSON.stringify({
-      success: true,
-      message: `Successfully imported ${initialEquipment.length} items`,
-      count: initialEquipment.length
-    }), {
-      status: 200,
-      headers: { "Content-Type": "application/json" }
-    });
+    return {
+      statusCode: 200,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        success: true,
+        message: `Successfully imported ${initialEquipment.length} items`,
+        count: initialEquipment.length
+      })
+    };
     
   } catch (error) {
     console.error("Error importing:", error);
-    return new Response(JSON.stringify({
-      error: "Failed to import data",
-      details: error.message
-    }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" }
-    });
+    return {
+      statusCode: 500,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        error: "Failed to import data",
+        details: error.message
+      })
+    };
   }
 };
