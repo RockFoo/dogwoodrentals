@@ -1,46 +1,53 @@
-import { getStore } from "@netlify/blobs";
+const { getStore } = require("@netlify/blobs");
 
-export default async (req, context) => {
+exports.handler = async (event, context) => {
   // Simple password protection
   const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "changeme123";
   
-  if (req.method !== "POST") {
-    return new Response("Method not allowed", { status: 405 });
+  if (event.httpMethod !== "POST") {
+    return {
+      statusCode: 405,
+      body: "Method not allowed"
+    };
   }
   
   try {
-    const body = await req.json();
+    const body = JSON.parse(event.body);
     const { password, equipment } = body;
     
     // Check password
     if (password !== ADMIN_PASSWORD) {
-      return new Response(JSON.stringify({
-        error: "Invalid password"
-      }), {
-        status: 401,
-        headers: { "Content-Type": "application/json" }
-      });
+      return {
+        statusCode: 401,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          error: "Invalid password"
+        })
+      };
     }
     
     // Save equipment data
     const store = getStore("equipment");
     await store.setJSON("all-equipment", equipment);
     
-    return new Response(JSON.stringify({
-      success: true,
-      message: "Equipment saved successfully"
-    }), {
-      status: 200,
-      headers: { "Content-Type": "application/json" }
-    });
+    return {
+      statusCode: 200,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        success: true,
+        message: "Equipment saved successfully"
+      })
+    };
     
   } catch (error) {
     console.error("Error saving equipment:", error);
-    return new Response(JSON.stringify({
-      error: "Failed to save equipment"
-    }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" }
-    });
+    return {
+      statusCode: 500,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        error: "Failed to save equipment",
+        details: error.message
+      })
+    };
   }
 };
