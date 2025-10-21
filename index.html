@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
     <!-- Primary Meta Tags -->
-    <title>Dogwood Rentals - Environmental & Industrial Equipment Rentals | Groundwater Sampling, Testing Equipment</title>
+    <title>Dogwood Rentals - Environmental & Industrial Equipment Rentals</title>
     <meta name="title" content="Dogwood Rentals - Environmental & Industrial Equipment Rentals">
-    <meta name="description" content="Professional environmental testing equipment, groundwater sampling tools, field equipment, and disposable supplies for rent. UTV, trailers, water quality meters, pumps, and more. Daily and weekly rates available.">
-    <meta name="keywords" content="equipment rental, environmental testing equipment, groundwater sampling, water quality meters, bladder pump rental, peristaltic pump, interface probe, gas detector rental, UTV rental, trailer rental, field equipment, Horiba U-52, YSI meter, low flow sampling, environmental consulting equipment">
+    <meta name="description" content="Professional environmental testing equipment, groundwater sampling tools, field equipment, and disposable supplies for rent.">
+    <meta name="keywords" content="equipment rental, environmental testing equipment, groundwater sampling, water quality meters, bladder pump rental">
     <meta name="author" content="Dogwood Rentals">
     <meta name="robots" content="index, follow">
     <link rel="canonical" href="https://www.dogwood-rentals.com">
@@ -17,38 +17,11 @@
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://www.dogwood-rentals.com">
     <meta property="og:title" content="Dogwood Rentals - Environmental & Industrial Equipment Rentals">
-    <meta property="og:description" content="Professional environmental testing equipment, groundwater sampling tools, and field equipment rentals. Daily and weekly rates available.">
-    <meta property="og:site_name" content="Dogwood Rentals">
-    
-    <!-- Twitter -->
-    <meta property="twitter:card" content="summary_large_image">
-    <meta property="twitter:url" content="https://www.dogwood-rentals.com">
-    <meta property="twitter:title" content="Dogwood Rentals - Environmental Equipment Rentals">
-    <meta property="twitter:description" content="Professional environmental testing equipment and groundwater sampling tools for rent.">
+    <meta property="og:description" content="Professional environmental testing equipment, groundwater sampling tools, and field equipment rentals.">
     
     <!-- Geo Tags for Local SEO -->
     <meta name="geo.region" content="US">
     <meta name="geo.placename" content="Charleston, West Virginia">
-    
-    <!-- JSON-LD Structured Data -->
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "LocalBusiness",
-      "name": "Dogwood Rentals",
-      "description": "Professional environmental and industrial equipment rentals for testing, sampling, and field operations",
-      "url": "https://www.dogwood-rentals.com",
-      "telephone": "+1-304-549-6182",
-      "email": "info@dogwood-rentals.com",
-      "address": {
-        "@type": "PostalAddress",
-        "addressLocality": "Charleston",
-        "addressRegion": "WV",
-        "addressCountry": "US"
-      },
-      "priceRange": "$20-$1500"
-    }
-    </script>
     
     <style>
         * {
@@ -314,48 +287,32 @@
     </footer>
 
     <script>
-        // Load CSV from external file
-        async function loadCSV() {
+        // Load equipment from Netlify Function
+        async function loadEquipment() {
             try {
-                const response = await fetch('equipment-data.csv');
+                const response = await fetch('/.netlify/functions/get-equipment');
                 if (!response.ok) {
-                    throw new Error('Could not load equipment data');
+                    throw new Error(`HTTP error! status: ${response.status}`);
                 }
-                const csvData = await response.text();
-                return csvData;
+                const data = await response.json();
+                return data.equipment || [];
             } catch (error) {
-                console.error('Error loading CSV:', error);
+                console.error('Error loading equipment:', error);
                 document.getElementById('equipmentContainer').innerHTML = `
                     <div class="loading" style="color: #c53030;">
                         <strong>Error loading equipment data.</strong><br>
-                        Please make sure "equipment-data.csv" is in the same folder as this HTML file.
+                        ${error.message}<br><br>
+                        Please make sure the site is deployed to Netlify with Blob storage enabled.
                     </div>`;
-                return null;
+                return [];
             }
-        }
-
-        // Parse CSV data
-        function parseCSV(csv) {
-            const lines = csv.trim().split('\n');
-            const headers = lines[0].split(',');
-            const data = [];
-            
-            for (let i = 1; i < lines.length; i++) {
-                const values = lines[i].split(',');
-                const item = {};
-                headers.forEach((header, index) => {
-                    item[header.trim()] = values[index] ? values[index].trim() : '';
-                });
-                data.push(item);
-            }
-            return data;
         }
 
         // Group equipment by category
         function groupByCategory(equipment) {
             const categories = {};
             equipment.forEach(item => {
-                const category = item.Category;
+                const category = item.category;
                 if (!categories[category]) {
                     categories[category] = [];
                 }
@@ -366,38 +323,35 @@
 
         // Create equipment card HTML
         function createEquipmentCard(item) {
-            const hasLink = item['Spec Sheet URL'] && item['Spec Sheet URL'].length > 0;
-            const dailyRate = item['Daily Rate'] ? `$${item['Daily Rate']}` : 'N/A';
-            const weeklyRate = item['Weekly Rate'] ? `$${item['Weekly Rate']}` : 'N/A';
+            const hasLink = item.specSheet && item.specSheet.length > 0;
+            const dailyRate = item.dailyRate ? `$${item.dailyRate}` : 'N/A';
+            const weeklyRate = item.weeklyRate ? `$${item.weeklyRate}` : 'N/A';
             
-            // Determine if this is a per-unit price (disposable supplies)
-            const isDisposable = item.Category === 'Disposable Supplies';
-            const priceLabel = isDisposable ? 'Price' : 'Daily';
-            const weeklyLabel = isDisposable ? '' : 'Weekly';
+            const isDisposable = item.category === 'Disposable Supplies';
             
             let cardHTML = `
                 <div class="equipment-card ${hasLink ? 'has-link' : ''}" 
-                     data-name="${item.Name}" 
-                     data-sku="${item.SKU}"
-                     ${hasLink ? `data-link="${item['Spec Sheet URL']}" onclick="window.open(this.dataset.link, '_blank')"` : ''}>
-                    <h3>${item.Name}${hasLink ? '<span class="external-link-badge">SPECS</span>' : ''}</h3>
-                    <div class="sku">SKU: ${item.SKU}</div>
+                     data-name="${item.name}" 
+                     data-sku="${item.sku}"
+                     ${hasLink ? `onclick="window.open('${item.specSheet}', '_blank')"` : ''}>
+                    <h3>${item.name}${hasLink ? '<span class="external-link-badge">SPECS</span>' : ''}</h3>
+                    <div class="sku">SKU: ${item.sku}</div>
                     <div class="pricing">`;
             
             if (isDisposable) {
                 cardHTML += `
                         <div class="price-item">
-                            <div class="price-label">${priceLabel}</div>
+                            <div class="price-label">Price</div>
                             <div class="price-value">${dailyRate}</div>
                         </div>`;
             } else {
                 cardHTML += `
                         <div class="price-item">
-                            <div class="price-label">${priceLabel}</div>
+                            <div class="price-label">Daily</div>
                             <div class="price-value">${dailyRate}</div>
                         </div>
                         <div class="price-item">
-                            <div class="price-label">${weeklyLabel}</div>
+                            <div class="price-label">Weekly</div>
                             <div class="price-value">${weeklyRate}</div>
                         </div>`;
             }
@@ -410,14 +364,15 @@
         }
 
         // Render all equipment
-        function renderEquipment() {
-            const equipment = parseCSV(csvData);
+        async function renderEquipment() {
+            const equipment = await loadEquipment();
+            if (equipment.length === 0) return;
+            
             const categorized = groupByCategory(equipment);
             const container = document.getElementById('equipmentContainer');
             
             let html = '<main role="main">';
             
-            // Define category order
             const categoryOrder = [
                 'Environmental Testing Equipment',
                 'Water Quality & Monitoring',
@@ -450,7 +405,6 @@
             html += '</main>';
             container.innerHTML = html;
             
-            // Initialize search after rendering
             initializeSearch();
         }
 
@@ -474,7 +428,6 @@
                     }
                 });
 
-                // Hide empty categories
                 categories.forEach(category => {
                     const visibleCards = category.querySelectorAll('.equipment-card[style="display: block;"], .equipment-card:not([style*="display: none"])');
                     if (searchTerm && visibleCards.length === 0) {
